@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Java
+target/
+build/
+
+# Temporary files
+*.tmp
+*.swp
