@@ -1,17 +1,11 @@
 # Observability
 
-Groovy 프로젝트의 Observability 실습 및 장애 분석 문서를 정리하는 공간입니다.
-
-## Purpose
-
-Spring Boot 애플리케이션을 대상으로 Prometheus와 Grafana를 활용하여
-애플리케이션 및 시스템 메트릭을 수집하고,
-실제 운영 환경에서 발생할 수 있는 상황을 실습하고 분석합니다.
+Spring Boot 애플리케이션의 모니터링 및 장애 대응 실습을 정리한 문서입니다.
 
 ## Documents
 
-- API Load Test *(작성 예정)*
-- Target Down *(작성 예정)*
-- Slow API *(작성 예정)*
-- Memory Pressure *(작성 예정)*
-- GC Pressure *(작성 예정)*
+- [01. API Load Test](./01_API_Load_Test.md)
+- [02. Target Down](./02_Target_Down.md)
+- 03. Slow API *(작성 예정)*
+- 04. Memory Pressure *(작성 예정)*
+- 05. GC Pressure *(작성 예정)*
