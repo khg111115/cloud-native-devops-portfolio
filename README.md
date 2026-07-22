@@ -18,6 +18,7 @@ Cloud Native DevOps Engineer를 목표로 학습하며 수행한 프로젝트와
 - 모니터링
 - 원인 분석
 - 회고
+
 를 중심으로 구성되어 있습니다.
 
 ---
@@ -81,7 +82,7 @@ AWS 실습 및 인프라 구축 기록
 
 ---
 
-# 📚 Documentation
+#  Documentation
 각 프로젝트에는 다음과 같은 문서가 포함됩니다.
 
 - Architecture
@@ -93,7 +94,7 @@ AWS 실습 및 인프라 구축 기록
 
 ---
 
-# 🎯 Goal
+#  Goal
 단순히 서비스를 실행하는 것을 넘어,
 문제를 재현하고 원인을 분석하며, 
 지속적으로 개선하는 DevOps Engineer를 목표로 합니다.
