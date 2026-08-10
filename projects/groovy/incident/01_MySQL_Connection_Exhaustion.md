@@ -20,8 +20,6 @@
 
 이번 테스트에서는 운영 MySQL에 직접 Connection Storm을 발생시켜 장애 상황을 재현하고, 장애 발생 시 Monitoring 시스템이 어떻게 동작하는지 함께 분석하였습니다.
 
-> 📷 **[Screenshot Placeholder - 테스트 개요]**
-
 ---
 
 # 2. Test Environment
@@ -35,6 +33,10 @@
 | Dashboard | Grafana |
 | Exporter | mysqld-exporter |
 
+
+테스트 시작 전 Prometheus Target 상태를 확인한 결과 Backend와 mysqld-exporter 모두 정상적으로 메트릭을 수집하고 있었습니다.
+
+![Prometheus Targets 정상 상태](./images/mysql-connection-exhaustion/01_prometheus_targets_before.png)
 ---
 
 # 3. Test Scenario
@@ -63,7 +65,9 @@ Connection Storm 스크립트를 이용하여 Connection 수를 단계적으로 
 - 76번째부터 신규 Connection 거부
 - `1040 Too many connections` 발생
 
-> 📷 **[Screenshot Placeholder - Connection Storm 실행 결과]**
+테스트 결과, 75개까지 Connection이 생성된 이후 76번째 Connection부터 MySQL의 Connection 한계에 도달하여 신규 연결이 거부되었습니다.
+
+![Connection Exhaustion 발생 결과](./images/mysql-connection-exhaustion/03_connection_storm_1040_error.png)
 
 ---
 
@@ -73,12 +77,10 @@ Connection Exhaustion은 예상했던 결과였습니다.
 
 하지만 테스트와 동시에 예상하지 못한 현상이 발생했습니다.
 
-- Grafana에서 MySQL Status가 **DOWN**으로 변경
-- mysqld-exporter가 Prometheus로 메트릭을 정상적으로 수집하지 못함
+- Grafana에서 MySQL Monitoring Status가 **DOWN**으로 변경
+- Prometheus에서 mysqld-exporter Target의 메트릭 수집 실패 확인
 
 단순한 Connection Exhaustion이 아니라 Monitoring 시스템까지 영향을 받은 이유를 분석하기 시작했습니다.
-
-> 📷 **[Screenshot Placeholder - Grafana Dashboard]**
 
 ---
 
@@ -105,7 +107,9 @@ Grafana에서 **Hikari Pending은 지속적으로 0**을 유지하였으며 Appl
 
 이 과정에서 `1040 Too many connections` 오류가 발생했습니다.
 
-> 📷 **[Screenshot Placeholder - Current Connections Graph]**
+Grafana에서도 MySQL Connection이 `max_connections` 한계까지 증가하는 것을 확인할 수 있었습니다.
+
+![Connection Storm 모니터링](./images/mysql-connection-exhaustion/02_connection_exhaustion_grafana.png)
 
 ---
 
@@ -114,6 +118,10 @@ Grafana에서 **Hikari Pending은 지속적으로 0**을 유지하였으며 Appl
 mysqld-exporter 역시 MySQL Connection을 사용하여 메트릭을 수집합니다.
 
 Connection 생성이 거부되면서 exporter도 새로운 Connection을 생성하지 못했고,
+실제 mysqld-exporter 로그에서도 MySQL 접속 시 `Error 1040: Too many connections`가 반복적으로 발생하는 것을 확인했습니다.
+
+![mysqld-exporter Connection Error](./images/mysql-connection-exhaustion/04_mysqld_exporter_connection_error.png)
+
 
 결과적으로
 
@@ -126,11 +134,11 @@ mysqld-exporter Metric Collection Failure
 
 ↓
 
-Prometheus Target DOWN
+Prometheus mysqld-exporter Target DOWN
 
 ↓
 
-Grafana Monitoring Failure
+Grafana Monitoring Data Loss
 ```
 
 라는 연쇄 현상이 발생하였습니다.
