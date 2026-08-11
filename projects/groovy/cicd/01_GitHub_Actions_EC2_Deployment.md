@@ -4,7 +4,7 @@
 
 Groovy 프로젝트의 개인 실습 환경에서 GitHub Actions와 Docker Hub를 활용하여 CI/CD 파이프라인을 구성하였다.
 
-기존에는 코드 변경 후 Docker 이미지를 직접 빌드하고 EC2에 접속하여 컨테이너를 갱신해야 했다.
+기존의 수동 배포 방식에서는 코드 변경 시 Docker 이미지를 직접 빌드하고 배포 서버에서 컨테이너를 갱신해야 한다.
 
 이를 개선하여 `dev` 브랜치에 코드가 Push되면 GitHub Actions가 자동으로 Docker 이미지를 빌드하여 Docker Hub에 Push하고, 이후 EC2에 SSH로 접속하여 최신 이미지를 Pull한 뒤 컨테이너를 재생성하도록 구성하였다.
 
@@ -29,8 +29,6 @@ docker compose pull
     ↓
 docker compose up -d
     ↓
-Nginx Restart
-    ↓
 Health Check
 ```
 
@@ -38,9 +36,13 @@ Health Check
 
 ## 2. 로컬 환경과 배포 환경 분리
 
-개발 환경에서는 소스 코드를 직접 빌드할 수 있도록 `docker-compose.yml`을 사용하였다.
+이전 Groovy 프로젝트의 모니터링 환경을 구성하는 과정에서 운영용 Compose 파일을 로컬에서 그대로 사용할 경우, Registry에 저장된 이미지를 Pull하여 실행하기 때문에 로컬에서 수정한 소스 코드가 반영되지 않는 문제를 경험하였다.
 
-반면 EC2 배포 환경에서는 EC2 내부에서 애플리케이션을 다시 빌드하지 않고, CI 과정에서 미리 생성된 Docker 이미지를 가져와 실행하도록 `docker-compose.deploy.yml`을 별도로 구성하였다.
+이를 통해 개발 환경과 배포 환경에서는 Docker Compose의 역할을 명확히 분리할 필요가 있다고 판단하였다.(Incident No.02 참고)
+
+개발 환경에서는 현재 소스 코드를 기반으로 이미지를 빌드할 수 있도록 `docker-compose.yml`을 사용하였다.
+
+반면 EC2 배포 환경에서는 서버 내부에서 애플리케이션을 다시 빌드하지 않고, CI 과정에서 생성되어 Docker Hub에 저장된 이미지를 Pull하여 실행하도록 `docker-compose.deploy.yml`을 별도로 구성하였다.
 
 ### Local
 
@@ -62,10 +64,10 @@ backend:
 
 ```text
 docker-compose.yml
-→ 로컬 개발 및 직접 Build
+→ 로컬 개발 환경에서 소스 기반 Image Build
 
 docker-compose.deploy.yml
-→ 배포 서버에서 Docker Hub Image 실행
+→ 배포 환경에서 Registry Image Pull 및 실행
 ```
 
 ![로컬 및 배포 Compose 구성 비교](./images/01_compose_local_vs_deploy.png)
@@ -74,9 +76,9 @@ docker-compose.deploy.yml
 
 ---
 
-## 3. GitHub Actions를 통한 Docker 이미지 자동 빌드
+## 3. GitHub Actions를 통한 Docker 이미지 자동 Build & Push
 
-CI 단계에서는 GitHub Actions를 이용하여 Frontend와 Backend Docker 이미지를 자동으로 빌드하도록 구성하였다.
+CI 단계에서는 GitHub Actions를 이용하여 Frontend와 Backend Docker 이미지를 자동으로 빌드하여 Docker Hub에 Push하도록 구성하였다.
 
 Workflow는 다음 과정을 수행한다.
 
@@ -87,13 +89,9 @@ Set up Docker Buildx
         ↓
 Login to Docker Hub
         ↓
-Build Frontend Image
+Build & Push Frontend Image
         ↓
-Push Frontend Image
-        ↓
-Build Backend Image
-        ↓
-Push Backend Image
+Build & Push Backend Image
 ```
 
 실제 GitHub Actions 실행 결과 Frontend와 Backend 이미지 모두 정상적으로 Build & Push가 완료되는 것을 확인하였다.
@@ -136,8 +134,6 @@ docker compose -f docker-compose.deploy.yml pull
 
 docker compose -f docker-compose.deploy.yml up -d
 
-docker compose -f docker-compose.deploy.yml restart nginx
-
 sleep 15
 
 docker compose -f docker-compose.deploy.yml ps
@@ -155,10 +151,10 @@ docker compose pull
 → Docker Hub에서 최신 이미지 다운로드
 
 docker compose up -d
-→ 변경된 이미지 기반으로 컨테이너 재생성
+→ 변경된 이미지 기반으로 컨테이너 생성/갱신
 
-restart nginx
-→ Reverse Proxy 재시작
+sleep 15
+→ Backend 애플리케이션 초기화 대기
 
 docker compose ps
 → 컨테이너 실행 상태 확인
@@ -204,7 +200,9 @@ curl -i http://localhost/api/health
 HTTP/1.1 200
 ```
 
-응답 Body에서도 Backend가 정상적으로 동작하고 있음을 확인하였다.
+응답 결과 `HTTP/1.1 200`과 `Server: nginx/1.27.5`를 확인하였다.
+
+이를 통해 Nginx가 요청을 정상적으로 수신하고 Backend의 Health API까지 요청이 전달되는 것을 확인하였다.
 
 ![EC2 컨테이너 및 Health Check 검증](./images/05_ec2_deployment_health_check.png)
 
@@ -223,7 +221,7 @@ Docker Image Build
 
 ---
 
-## 7. Troubleshooting - EC2 Docker 권한 문제
+## 7. Troubleshooting - EC2 Docker Deploy 실패
 
 ### 문제 상황
 
@@ -241,11 +239,13 @@ sudo docker compose -f docker-compose.deploy.yml pull
 
 ### 원인 분석
 
-초기에는 EC2에서 Docker 명령을 실행하기 위해 `sudo`를 사용하는 형태로 Workflow를 작성하였다.
+실패한 Workflow에서는 Docker Compose 명령을 `sudo`를 통해 실행하고 있었다.
 
-그러나 GitHub Actions의 SSH 기반 비대화형 실행 환경에서 불필요하게 `sudo`를 사용하면서 Docker 실행 과정에 문제가 발생하였다.
+EC2에 직접 접속하여 확인한 결과, `ec2-user` 환경에서는 별도의 `sudo` 없이 `docker compose` 명령이 정상적으로 실행되고 있었다.
 
-EC2 사용자의 Docker 실행 권한을 확인한 뒤 별도의 `sudo` 없이 Docker 명령을 실행할 수 있도록 Workflow를 수정하였다.
+따라서 Workflow의 실행 환경을 EC2에서 정상 동작이 확인된 사용자 환경과 동일하게 맞추기 위해 `sudo`를 제거하였다.
+
+`sudo` 제거 후 배포가 정상화된 것은 확인하였으나, 당시 실패 로그만으로 `sudo` 사용 자체를 배포 실패의 단일 근본 원인으로 확정하지는 않았다.
 
 ### 수정
 
@@ -276,7 +276,7 @@ build-and-push  → Success
 deploy          → Success
 ```
 
-이후 EC2에서도 컨테이너 상태 및 `/api/health`의 HTTP 200 응답을 확인하여 실제 서비스까지 정상적으로 배포되었음을 재검증하였다.
+이후 EC2에서도 컨테이너 상태 및 `/api/health`의 HTTP 200 응답을 확인하여 애플리케이션이 정상적으로 배포되었음을 재검증하였다.
 
 ---
 
@@ -306,7 +306,7 @@ deploy          → Success
      │
      ├── docker compose pull
      ├── docker compose up -d
-     ├── nginx restart
+     ├── container status check
      └── health check
 ```
 
