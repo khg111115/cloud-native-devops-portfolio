@@ -2,7 +2,22 @@
 
 ## 1. 문제 상황
 
-부하 테스트 및 Observability 환경을 구성한 뒤 Prometheus Target 상태를 확인하던 중, 전체 5개 Target 중 `docker-exporter`만 `DOWN` 상태인 것을 확인하였다.
+부하 테스트 및 Observability 환경을 구성한 뒤 Prometheus Target 상태를 확인하였다.
+
+```bash
+curl -s http://localhost:9090/api/v1/targets \
+| grep -o '"health":"[^"]*"' \
+| sort | uniq -c
+```
+
+확인 결과 전체 5개 Target 중 1개가 `DOWN` 상태였다.
+
+```text
+1 "health":"down"
+4 "health":"up"
+```
+
+DOWN 상태인 Target을 특정하기 위해 상세 정보를 확인하였다.
 
 ```bash
 curl -s http://localhost:9090/api/v1/targets \
@@ -10,9 +25,10 @@ curl -s http://localhost:9090/api/v1/targets \
 | grep -B 8 -A 8 '"health": "down"'
 ```
 
-확인 결과 `docker-exporter` Target에서 다음 오류가 발생하고 있었다.
+확인 결과 `docker-exporter`가 DOWN 상태였으며 다음 오류가 발생하고 있었다.
 
 ```text
+job: docker-exporter
 scrapeUrl: http://docker-exporter:8080/metrics
 lastError: context deadline exceeded
 health: down
