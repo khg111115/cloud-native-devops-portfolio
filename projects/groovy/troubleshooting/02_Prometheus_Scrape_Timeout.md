@@ -4,18 +4,6 @@
 
 부하 테스트 및 Observability 환경을 구성한 뒤 Prometheus Target 상태를 확인하였다.
 
-```bash
-curl -s http://localhost:9090/api/v1/targets \
-| grep -o '"health":"[^"]*"' \
-| sort | uniq -c
-```
-
-확인 결과 전체 5개 Target 중 1개가 `DOWN` 상태였다.
-
-```text
-1 "health":"down"
-4 "health":"up"
-```
 
 확인 결과 `docker-exporter`가 DOWN 상태였으며 다음 오류가 발생하고 있었다.
 
