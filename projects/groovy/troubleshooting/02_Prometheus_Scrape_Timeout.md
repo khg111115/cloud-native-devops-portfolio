@@ -17,14 +17,6 @@ curl -s http://localhost:9090/api/v1/targets \
 4 "health":"up"
 ```
 
-DOWN 상태인 Target을 특정하기 위해 상세 정보를 확인하였다.
-
-```bash
-curl -s http://localhost:9090/api/v1/targets \
-| python3 -m json.tool \
-| grep -B 8 -A 8 '"health": "down"'
-```
-
 확인 결과 `docker-exporter`가 DOWN 상태였으며 다음 오류가 발생하고 있었다.
 
 ```text
