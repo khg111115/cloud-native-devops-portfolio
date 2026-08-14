@@ -2,7 +2,7 @@
 
 ## 1. 개요
 
-기존 Groovy 프로젝트는 Docker Compose를 기반으로 Frontend, Backend, MySQL을 실행하고 있었다.
+기존 Groovy 프로젝트는 Docker Compose를 기반으로 Frontend, Backend, MySQL을 실행하고 있다.
 
 Mini PC 환경에 Kubernetes를 적용하기에 앞서, 로컬 Mac 환경에서 `kind`를 이용해 Kubernetes 클러스터를 구성하고 기존 애플리케이션을 단계적으로 배포하였다.
 
@@ -62,7 +62,7 @@ kubectl scale deployment nginx-demo --replicas=2
 kubectl delete pod <pod-name>
 ```
 
-Pod가 삭제되자 ReplicaSet이 원하는 replica 수를 유지하기 위해 새로운 Pod를 자동으로 생성하였다.
+Pod이 삭제되자 ReplicaSet이 원하는 replica 수를 유지하기 위해 새로운 Pod을 자동으로 생성하였다.
 
 ```text
 Deployment
@@ -87,7 +87,7 @@ Pod C
 
 ![Kubernetes Pod Self Healing](./images/01_kubernetes_pod_self_healing.png)
 
-이를 통해 Kubernetes가 삭제된 Pod 자체를 복구하는 것이 아니라, **선언된 Desired State와 현재 상태의 차이를 조정하여 새로운 Pod를 생성한다는 점**을 확인하였다.
+이를 통해 Kubernetes가 삭제된 Pod 자체를 복구하는 것이 아니라, **선언된 Desired State와 현재 상태의 차이를 조정하여 새로운 Pod을 생성한다는 점**을 확인하였다.
 
 또한 Pod의 IP와 이름은 재생성 과정에서 변경될 수 있기 때문에, 애플리케이션이 개별 Pod에 직접 의존하지 않도록 Service를 통한 접근이 필요함을 확인하였다.
 
@@ -160,17 +160,17 @@ mysql Service
 MySQL Pod
 ```
 
-초기 Backend 배포 시에는 Kubernetes 내부에 `mysql` Service가 존재하지 않아 Backend가 데이터베이스 호스트를 찾지 못했고 정상적으로 기동하지 못하였다.
+초기 Backend 배포 시에는 Kubernetes 내부에 `mysql` Service가 존재하지 않아 Backend가 데이터베이스 호스트를 찾지 못했고 정상적으로 작동하지 않았다.
 
-이후 MySQL Deployment와 ClusterIP Service를 생성하였다.
+-> MySQL Deployment와 ClusterIP Service를 생성하였다.
 
-Service는 label selector를 이용하여 MySQL Pod를 연결 대상으로 관리하므로, MySQL Pod가 재생성되어 이름이나 IP가 변경되더라도 Backend는 계속 다음 주소를 사용할 수 있다.
+Service는 label selector를 이용하여 MySQL Pod를 연결 대상으로 관리하므로, MySQL Pod이 재생성되어 이름이나 IP가 변경되더라도 Backend는 계속 다음 주소를 사용할 수 있다.
 
 ```text
 mysql:3306
 ```
 
-MySQL 구성 이후 Backend Pod가 새롭게 생성되면서 데이터베이스 연결이 정상적으로 이루어졌다.
+MySQL 구성 이후 Backend Pod이 새롭게 생성되면서 데이터베이스 연결이 정상적으로 이루어졌다.
 
 Backend 정상 기동 후 다음과 같이 Health Check를 수행하였다.
 
@@ -243,7 +243,7 @@ Browser
 
 ## 7. Frontend → Backend → MySQL 통합 검증
 
-최종적으로 다음 세 애플리케이션 Pod가 모두 정상적으로 실행되었다.
+최종적으로 다음 세 애플리케이션 Pod이 모두 정상적으로 실행되었다.
 
 ```text
 groovy-frontend    Running
@@ -295,7 +295,7 @@ MySQL Pod
 DB Data
 ```
 
-MySQL Pod가 삭제될 경우 Deployment와 ReplicaSet에 의해 새로운 MySQL Pod는 생성될 수 있다.
+MySQL Pod이 삭제될 경우 Deployment와 ReplicaSet에 의해 새로운 MySQL Pod는 생성될 수 있다.
 
 하지만 새롭게 생성된 Pod는 기존 Pod 자체를 복구한 것이 아니므로 기존 Pod 내부에 저장되어 있던 데이터까지 자동으로 복구되지는 않는다.
 
@@ -324,7 +324,7 @@ MySQL Pod
 Persistent Storage
 ```
 
-이를 통해 MySQL Pod가 삭제되고 새로운 Pod가 생성되더라도 동일한 Persistent Storage를 사용하도록 구성하고, 기존 데이터가 유지되는지 검증할 예정이다.
+이를 통해 MySQL Pod가 삭제되고 새로운 Pod이 생성되더라도 동일한 Persistent Storage를 사용하도록 구성하고, 기존 데이터가 유지되는지 검증할 예정이다.
 
 ---
 
