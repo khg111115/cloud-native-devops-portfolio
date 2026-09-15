@@ -36,6 +36,8 @@ Raw Kubernetes Manifest로 서비스 실행을 확인한 이후에는 반복되�
 
 프로젝트가 고도화되면서 기존 Monolithic Backend를 Identity, Study, Content, Calendar, Notification의 5개 도메인 서비스로 분리하는 MSA 전환을 진행했습니다.
 
+![Groovy MSA Architecture Transition](./images/02_msa_architecture_transition.png)
+
 각 서비스가 독립적으로 배포되고 변경될 수 있는 구조로 전환되면서 애플리케이션뿐만 아니라 Database 구조 역시 기존 형태를 그대로 유지하기보다 서비스 경계에 맞게 재설계할 필요가 있었습니다.
 
 이에 따라 각 서비스가 독립적인 Database를 사용하도록 Identity, Study, Content, Calendar, Notification Database를 분리했습니다.
@@ -73,6 +75,8 @@ Single RDS Instance ├─ content
 다만 여러 서비스의 Database가 하나의 RDS Instance에 집중되면서 해당 Instance의 장애가 전체 서비스에 영향을 줄 수 있는 새로운 가용성 문제가 발생했습니다.
 
 따라서 이후에는 RDS Multi-AZ를 적용하고 Failover 상황에서의 서비스 영향을 검증하는 방향으로 Database 가용성 구성을 확장했습니다.
+
+![Groovy RDS Architecture and High Availability](./images/03_rds_architecture_and_high_availability.png)
 
 Database 구조 변경 과정과 의사결정은 별도의 MSA Database Architecture 문서에서 상세히 정리합니다.
 
