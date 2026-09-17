@@ -65,6 +65,10 @@ DatabaseConnections Max = 136
 
 최대 137개의 Connection을 허용하는 환경에서 실제 Connection이 최대 136개까지 증가하면서 **RDS Connection Capacity가 사실상 상한에 근접하는 상황**을 확인했습니다.
 
+![db.t4g.small RDS Connection 포화](./images/16_rds_small_connection_saturation.png)
+
+> `db.t4g.small` 환경에서 DatabaseConnections가 최대 136까지 증가하여, 프로젝트 환경에서 확인한 `max_connections=137`에 근접하는 것을 확인했습니다.
+
 동시에 애플리케이션에서는 HikariCP Pending Connection도 발생했습니다.
 
 하지만 이 상태만으로는 Pending의 원인을 단순히 HikariCP Pool Size 부족으로 판단할 수 없었습니다.
@@ -105,6 +109,10 @@ DatabaseConnections Max  = 263
 
 Small 환경에서는 `136 / 137`까지 사용한 것과 달리, Medium에서는 RDS 자체의 Connection Ceiling에 도달하지 않았습니다.
 
+![db.t4g.medium RDS Connection Baseline](./images/17_rds_medium_connection_baseline.png)
+
+> `db.t4g.medium` 환경에서는 테스트 중 DatabaseConnections가 최대 263까지 증가했으며, 프로젝트 환경의 `max_connections=303`에 도달하지 않았습니다.
+
 이를 통해 **RDS Capacity의 직접적인 제약을 완화한 상태에서 서비스별 HikariCP Connection 사용 특성을 비교**할 수 있었습니다.
 
 ### 서비스별 Connection 수요
@@ -121,6 +129,10 @@ Small 환경에서는 `136 / 137`까지 사용한 것과 달리, Medium에서는
 
 동일한 Pool Size를 사용하고 있었지만 실제 Connection 사용량에는 명확한 차이가 있었습니다.
 
+![서비스별 HikariCP Connection 수요](./images/18_hikaricp_service_connection_demand.png)
+
+> 동일한 `maximumPoolSize=10` 환경에서도 서비스별 Active Connection 사용량이 서로 다르게 나타나는 것을 확인했습니다.
+
 Calendar와 Study는 Active Connection이 Pool 상한인 10까지 증가하면서 Pending도 발생했습니다. 반면 Content는 최대 8개의 Active Connection을 사용했고, Identity와 Notification은 각각 4개와 2개 수준에 머물렀으며 Pending도 발생하지 않았습니다.
 
 ~~~text
@@ -130,6 +142,10 @@ Content       → 중간 수요 / Pending 없음
 Identity      → 낮은 수요 / Pending 없음
 Notification  → 낮은 수요 / Pending 없음
 ~~~
+
+![HikariCP 튜닝 전 Connection Acquire Time](./images/19_hikaricp_acquire_before_tuning.png)
+
+> Baseline 환경에서 Connection Acquire Time도 함께 확인하여 Active/Pending Connection만으로 Pool Size를 판단하지 않았습니다.
 
 다만 Pending Connection의 크기만으로 필요한 Pool Size를 결정하지 않았습니다.
 
@@ -160,6 +176,10 @@ Medium 환경의 Baseline 테스트를 통해 서비스별 Connection 수요가 
 | Content | 10 | 10 | 2 |
 | Identity | 10 | 6 | 2 |
 | Notification | 10 | 4 | 2 |
+
+![서비스별 HikariCP Pool Size 튜닝](./images/20_hikaricp_pool_tuning_result.png)
+
+> 서비스별 Connection 수요를 기준으로 Calendar와 Study의 Pool을 확대하고, Identity와 Notification의 Pool을 축소한 설정이 적용된 것을 확인했습니다.
 
 조정 방향은 다음과 같습니다.
 

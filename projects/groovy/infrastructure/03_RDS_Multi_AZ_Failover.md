@@ -124,6 +124,10 @@ Status     available
 
 이를 통해 기존 Single-AZ RDS가 Multi-AZ로 정상 전환되었고, Failover 검증 전 Primary DB가 `ap-northeast-2b`에서 정상적으로 동작하고 있음을 확인했습니다.
 
+![Failover 전 Primary AZ](./images/10_rds_multi_az_primary_2b.png)
+
+> 강제 Failover 전 Multi-AZ RDS의 Primary가 `ap-northeast-2b`에 위치한 것을 확인했습니다.
+
 RDS Event에서도 Multi-AZ 전환 과정을 확인했습니다.
 
 ~~~text
@@ -164,6 +168,10 @@ After Failover
 PrimaryAZ  ap-northeast-2a
 ~~~
 
+![Failover 후 Primary AZ](./images/11_rds_failover_primary_2a.png)
+
+> 강제 Failover 완료 후 Primary AZ가 `ap-northeast-2b`에서 `ap-northeast-2a`로 변경된 것을 확인했습니다.
+
 따라서 강제 Failover를 통해 Primary가 실제로 다음과 같이 전환된 것을 확인했습니다.
 
 ~~~text
@@ -188,6 +196,10 @@ RDS Event에서도 Failover 과정을 확인했습니다.
 세부 Event Timestamp를 기준으로 Failover 시작부터 완료까지 **약 28.4초**가 소요되었습니다.
 
 다만 이 수치는 **AWS RDS Event에서 관측한 Failover 처리 시간**이며, 애플리케이션의 실제 서비스 중단 시간이나 DB Connection 복구 시간을 의미하지 않습니다.
+
+![RDS Multi-AZ Failover Event](./images/12_rds_failover_events.png)
+
+> RDS Event를 통해 Failover 시작과 완료 과정을 확인했으며, Event Timestamp 기준 처리 시간은 약 28.4초였습니다.
 
 이를 통해 Multi-AZ 구성이 단순히 활성화된 상태에 그치지 않고, 강제 Failover 상황에서 Primary DB가 `ap-northeast-2b`에서 `ap-northeast-2a`로 실제 전환되는 것을 확인했습니다.
 
@@ -225,6 +237,10 @@ request timed out after 30000ms
 | Connection Timeout | 30,000ms |
 
 즉 Failover 과정에서 기존 Connection이 종료된 뒤, 일시적으로 Connection Pool에서 사용할 수 있는 DB Connection이 존재하지 않았고 Connection을 기다리던 요청이 Timeout되는 현상을 확인했습니다.
+
+![Failover 중 HikariCP Connection Failure](./images/13_content_hikari_connection_failure.png)
+
+> Content Service 로그에서 기존 Connection Validation 실패와 새로운 Connection 요청의 Timeout을 확인했습니다.
 
 ### 관측 결과
 
@@ -265,6 +281,10 @@ content-service-8bfb58cdd-pqp6x      Running   0
 
 따라서 Failover와 DB Connection 오류가 발생하는 동안에도 Content Service Pod 자체는 재시작되지 않았음을 확인했습니다.
 
+![Content Service Pod 재시작 여부](./images/14_content_pod_no_restart.png)
+
+> Connection 오류 이후에도 동일한 Content Service Pod가 `Running`, `RESTARTS=0` 상태를 유지했습니다.
+
 ### 동일 Pod에서 DB API 호출
 
 이후 동일한 Content Service Pod에 직접 Port Forwarding하여 Database 조회가 필요한 API를 호출했습니다.
@@ -280,6 +300,10 @@ HTTP Status: 200
 ~~~
 
 즉, Failover 과정에서 DB Connection 오류가 발생했던 **동일한 Pod가 재시작되지 않은 상태에서 다시 Database 데이터를 정상적으로 조회**할 수 있었습니다.
+
+![Failover 이후 DB API 복구](./images/15_content_db_api_recovered_200.png)
+
+> 동일한 Content Service Pod에서 Database 조회 API가 다시 `HTTP 200`을 반환하는 것을 확인했습니다.
 
 검증 흐름은 다음과 같습니다.
 

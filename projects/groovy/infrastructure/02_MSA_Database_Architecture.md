@@ -377,6 +377,10 @@ Logical Data Boundary
 | 고가용성 | Multi-AZ 별도 검증 |
 | Connection 한계 | 부하 테스트 및 HikariCP와 함께 별도 검증 |
 
+![RDS 내부 서비스별 Database 분리](./images/07_msa_service_databases.png)
+
+> 최종 AWS 환경에서 하나의 RDS Instance 내부에 Identity, Study, Content, Calendar, Notification 서비스별 Database가 논리적으로 분리되어 있는 상태를 확인했습니다.
+
 이 구조는 서비스별 RDS의 물리적 격리를 유지하는 것보다 **현재 프로젝트 규모에서의 비용 효율을 우선한 결과**입니다.
 
 동시에 RDS Instance를 통합함으로써 Connection Capacity와 Database 장애가 여러 서비스에 영향을 줄 수 있다는 새로운 운영 과제도 명확해졌습니다.
