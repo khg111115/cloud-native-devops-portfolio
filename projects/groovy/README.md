@@ -112,9 +112,17 @@ RDS Connection Capacity & HikariCP Tuning
 ### Infrastructure
 
 - [Kubernetes & Helm Migration](./infrastructure/01_Kubernetes_Helm_Migration.md)
+  - Docker Compose 기반 서비스를 Kubernetes로 전환하고 Helm Chart 기반의 반복 가능한 배포 구조로 개선
+- [MSA Database Architecture](./infrastructure/02_MSA_Database_Architecture.md)
+  - MSA 전환에 따른 Database 경계 분리와 5 RDS → 1 RDS / 5 Database 재설계 과정
+- [RDS Multi-AZ & Failover](./infrastructure/03_RDS_Multi_AZ_Failover.md)
+  - Multi-AZ 적용과 강제 Failover를 통한 Primary AZ 전환 및 DB Connection 복구 검증
+- [RDS Connection Capacity & HikariCP Tuning](./infrastructure/04_RDS_Connection_Capacity.md)
+  - RDS Connection Capacity 측정, 서비스별 Connection 수요 분석 및 HikariCP Pool 튜닝
 
 ### Troubleshooting
 
-- [MySQL Connection Exhaustion](./troubleshooting/01_MySQL_Connection_Exhaustion.md)
-
-> Database Architecture, RDS Multi-AZ, Connection Capacity 관련 상세 문서는 심화 프로젝트 작업 기록을 기반으로 추가 정리합니다.
+- [MySQL Connection Exhaustion & Monitoring Failure](./troubleshooting/01_MySQL_Connection_Exhaustion.md)
+  - MySQL Connection 한계 도달과 mysqld-exporter Metric 수집 실패의 원인 분석
+- [Argo CD PreSync DB-init Bootstrap Failure](./troubleshooting/02_ArgoCD_DB_Init_Bootstrap.md)
+  - PreSync와 Resource Dependency 충돌을 재현하고 Sync Wave 기반으로 Deployment Ordering 재설계
